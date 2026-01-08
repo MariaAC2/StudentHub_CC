@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-business
+  labels:
+    app: {{ .Release.Name }}-business
+spec:
+  replicas: {{ .Values.business.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-business
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-business
+    spec:
+      containers:
+        - name: business-service
+          image: "{{ .Values.business.image.repository }}:{{ .Values.business.image.tag }}"
+          imagePullPolicy: {{ .Values.business.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.business.containerPort }}
+          env:
+            - name: AUTH_SERVICE_BASE_URL
+              value: "http://studenthub-auth"
+
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres:5432/business_db"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "master"
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: "masterpass"
+
