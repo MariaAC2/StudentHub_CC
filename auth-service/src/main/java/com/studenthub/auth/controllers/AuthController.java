@@ -1,10 +1,13 @@
-package com.student_hub.controllers;
+package com.studenthub.auth.controllers;
 
-import com.student_hub.dtos.LoginRequest;
-import com.student_hub.dtos.RegisterRequest;
-import com.student_hub.dtos.TokenResponse;
-import com.student_hub.services.AuthService;
+import com.studenthub.auth.dtos.LoginRequest;
+import com.studenthub.auth.dtos.RegisterRequest;
+import com.studenthub.auth.dtos.TokenResponse;
+import com.studenthub.auth.dtos.ValidateTokenResponse;
+import com.studenthub.auth.services.AuthService;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -26,5 +29,17 @@ public class AuthController {
     @PostMapping("/login")
     public TokenResponse login(@RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+
+    @GetMapping("/validate")
+    public ValidateTokenResponse validate(Authentication authentication) {
+
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+
+        assert jwt != null;
+        Long userId = Long.valueOf(jwt.getSubject());
+        String role = jwt.getClaim("roles");
+
+        return new ValidateTokenResponse(userId, role);
     }
 }

@@ -2,7 +2,7 @@ package com.studenthub.business.services;
 
 import com.studenthub.business.dtos.AssignmentRequest;
 import com.studenthub.business.dtos.AssignmentResponse;
-import com.studenthub.business.entities.User;
+import com.studenthub.business.entities.UserProfile;
 import com.studenthub.business.enums.UserRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,10 +31,10 @@ public class AssignmentService {
     }
 
     public AssignmentResponse createAssignment(AssignmentRequest assignment) {
-        User currentUser = userService.getCurrentUser(); // make it public or create a CurrentUserService
+        Long currentUserId = userService.getCurrentUserId();
 
         // 1) enforce permission
-        if (currentUser.getRole() == UserRole.STUDENT) {
+        if (!userService.hasRole("TEACHER") && !userService.hasRole("ADMIN")) {
             throw new org.springframework.security.access.AccessDeniedException(
                     "Only teachers can create assignments"
             );
@@ -140,9 +140,9 @@ public class AssignmentService {
 
     @Transactional
     public AssignmentResponse updateAssignment(Long id, AssignmentRequest updated) throws AccessDeniedException {
-        User currentUser = userService.getCurrentUser();
+        Long currentUserId = userService.getCurrentUserId();
 
-        if (currentUser.getRole() == UserRole.STUDENT) {
+        if (!userService.hasRole("TEACHER") && !userService.hasRole("ADMIN")) {
             throw new AccessDeniedException("Only teachers can update assignments");
         }
 
@@ -189,9 +189,9 @@ public class AssignmentService {
     @Transactional
     public void deleteAssignment(Long id) throws AccessDeniedException {
 
-        User currentUser = userService.getCurrentUser();
+        Long currentUserId = userService.getCurrentUserId();
 
-        if (currentUser.getRole() == UserRole.STUDENT) {
+        if (!userService.hasRole("TEACHER") && !userService.hasRole("ADMIN")) {
             throw new AccessDeniedException("Only teachers can delete assignments");
         }
 
@@ -203,8 +203,8 @@ public class AssignmentService {
         Course course = assignment.getCourse();
         Long courseCreatorId = course.getCreatedById();
 
-        boolean isCreator = courseCreatorId.equals(currentUser.getId());
-        boolean isAdmin = currentUser.getRole() == UserRole.ADMIN;
+        boolean isCreator = courseCreatorId.equals(currentUserId);
+        boolean isAdmin = userService.hasRole("ADMIN");
 
         if (!isCreator && !isAdmin) {
             throw new AccessDeniedException(

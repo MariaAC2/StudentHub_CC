@@ -8,8 +8,6 @@ import java.time.Instant;
 public record UserProfileResponse(
         Long id,
         String name,
-        String email,
-        UserRole role,
         TeacherRequestStatus teacherRequestStatus,
         Instant teacherRequestedAt,
         Instant teacherReviewedAt,

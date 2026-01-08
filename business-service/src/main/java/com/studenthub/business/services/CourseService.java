@@ -4,7 +4,7 @@ import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 import com.studenthub.business.dtos.*;
-import com.studenthub.business.entities.User;
+import com.studenthub.business.entities.UserProfile;
 import com.studenthub.business.enums.UserRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -59,12 +59,12 @@ public class CourseService {
     }
 
     public CourseResponse createCourse(CourseRequest request) {
-        User currentUser = userService.getCurrentUser(); // make it public or create a CurrentUserService
+        Long currentUserId = userService.getCurrentUserId();
 
-        // 1) enforce permission
-        if (currentUser.getRole() == UserRole.STUDENT) {
+        // 1) enforce permission: allow TEACHER and ADMIN only
+        if (!userService.hasRole("TEACHER") && !userService.hasRole("ADMIN")) {
             throw new org.springframework.security.access.AccessDeniedException(
-                    "Only teachers can create courses"
+                    "Only teachers or admins can create courses"
             );
         }
 
@@ -72,7 +72,7 @@ public class CourseService {
         Course course = new Course();
         course.setTitle(request.title().trim());
         course.setDescription(request.description());
-        course.setCreatedById(currentUser.getId());
+        course.setCreatedById(currentUserId);
 
         // 3) optional parent course
         if (request.parentCourseId() != null) {
@@ -116,17 +116,17 @@ public class CourseService {
 
     @Transactional
     public CourseResponse updateCourse(Long id, CourseUpdateRequest updated) throws AccessDeniedException {
-        User currentUser = userService.getCurrentUser();
+        Long currentUserId = userService.getCurrentUserId();
 
-        if (currentUser.getRole() == UserRole.STUDENT) {
-            throw new AccessDeniedException("Only teachers can update courses");
+        if (!userService.hasRole("TEACHER") && !userService.hasRole("ADMIN")) {
+            throw new AccessDeniedException("Only teachers or admins can update courses");
         }
 
         Course existing = courseRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Course not found with id: " + id));
 
-        if (currentUser.getRole() != UserRole.ADMIN &&
-                !existing.getCreatedById().equals(currentUser.getId())) {
+        if (!userService.hasRole("ADMIN") &&
+                !existing.getCreatedById().equals(currentUserId)) {
             throw new AccessDeniedException("You can update only your own courses");
         }
 
@@ -149,18 +149,18 @@ public class CourseService {
 
     @Transactional
     public void deleteCourse(Long id) throws AccessDeniedException {
-        User currentUser = userService.getCurrentUser();
+        Long currentUserId = userService.getCurrentUserId();
 
-        if (currentUser.getRole() == UserRole.STUDENT) {
-            throw new AccessDeniedException("Only teachers can delete courses");
+        if (!userService.hasRole("TEACHER") && !userService.hasRole("ADMIN")) {
+            throw new AccessDeniedException("Only teachers or admins can delete courses");
         }
 
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Course not found with id: " + id));
 
         // Only the creator can delete (optionally allow ADMIN too)
-        boolean isCreator = course.getCreatedById().equals(currentUser.getId());
-        boolean isAdmin = currentUser.getRole() == UserRole.ADMIN;
+        boolean isCreator = course.getCreatedById().equals(currentUserId);
+        boolean isAdmin = userService.hasRole("ADMIN");
 
         if (!isCreator && !isAdmin) {
             throw new AccessDeniedException("You can delete only courses you created");

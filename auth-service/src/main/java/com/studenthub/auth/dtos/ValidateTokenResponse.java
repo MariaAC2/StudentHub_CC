@@ -1,4 +1,6 @@
 package com.studenthub.auth.dtos;
 
-public record ValidateTokenResponse() {
-}
+public record ValidateTokenResponse(
+        Long userId,
+        String role
+) {}

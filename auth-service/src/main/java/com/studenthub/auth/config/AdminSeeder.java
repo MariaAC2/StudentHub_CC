@@ -1,8 +1,8 @@
-package com.studenthub.business.config;
+package com.studenthub.auth.config;
 
-import com.studenthub.business.entities.UserProfile;
-import com.studenthub.business.enums.UserRole;
-import com.studenthub.business.repositories.UserProfileRepository;
+import com.studenthub.auth.entities.User;
+import com.studenthub.auth.enums.UserRole;
+import com.studenthub.auth.repositories.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,7 +14,7 @@ import java.util.List;
 public class AdminSeeder {
 
     @Bean
-    CommandLineRunner seedAdmins(UserProfileRepository userRepository,
+    CommandLineRunner seedAdmins(UserRepository userRepository,
                                  PasswordEncoder passwordEncoder) {
 
         return args -> {
@@ -32,7 +32,7 @@ public class AdminSeeder {
                 boolean exists = userRepository.findByEmail(admin.email()).isPresent();
 
                 if (!exists) {
-                    UserProfile user = new UserProfile(
+                    User user = new User(
                             admin.name(),
                             admin.email(),
                             passwordEncoder.encode("ChangeMe123!"),

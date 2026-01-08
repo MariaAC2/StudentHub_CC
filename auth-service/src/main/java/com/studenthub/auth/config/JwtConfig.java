@@ -1,4 +1,4 @@
-package com.student_hub.config;
+package com.studenthub.auth.config;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.springframework.beans.factory.annotation.Value;

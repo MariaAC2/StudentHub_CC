@@ -1,3 +1,3 @@
-package com.student_hub.dtos;
+package com.studenthub.auth.dtos;
 
 public record LoginRequest(String email, String password) { }

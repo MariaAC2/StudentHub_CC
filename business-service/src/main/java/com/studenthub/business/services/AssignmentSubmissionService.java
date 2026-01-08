@@ -6,7 +6,7 @@ import com.studenthub.business.dtos.GradeSubmissionRequest;
 import com.studenthub.business.entities.Assignment;
 import com.studenthub.business.entities.AssignmentSubmission;
 import com.studenthub.business.entities.Course;
-import com.studenthub.business.entities.User;
+import com.studenthub.business.entities.UserProfile;
 import com.studenthub.business.enums.SubmissionStatus;
 import com.studenthub.business.enums.UserRole;
 import com.studenthub.business.repositories.AssignmentRepository;
@@ -43,20 +43,20 @@ public class AssignmentSubmissionService {
 
     @Transactional
     public AssignmentSubmissionResponse createSubmission(Long assignmentId, AssignmentSubmissionRequest req) {
-        User current = userService.getCurrentUser();
+        Long currentUserId = userService.getCurrentUserId();
 
         Assignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new RuntimeException("Assignment not found with id: " + assignmentId));
 
         // only students can create submissions (teachers/admins can not submit as students)
-        if (current.getRole() != UserRole.STUDENT) {
+        if (!userService.hasRole("STUDENT")) {
             throw new AccessDeniedException("Only students can create submissions");
         }
 
         Course course = assignment.getCourse();
 
         // check enrollment
-        boolean enrolled = enrollmentRepository.existsByCourseIdAndUserId(course.getId(), current.getId());
+        boolean enrolled = enrollmentRepository.existsByCourseIdAndUserId(course.getId(), currentUserId);
         if (!enrolled) {
             throw new AccessDeniedException("You must be enrolled in the course to submit assignments");
         }
@@ -74,14 +74,14 @@ public class AssignmentSubmissionService {
 
         // ensure unique attempt
         Optional<AssignmentSubmission> existingAttempt = submissionRepository
-                .findByAssignmentIdAndStudentIdAndAttemptNo(assignmentId, current.getId(), attemptNo);
+                .findByAssignmentIdAndStudentIdAndAttemptNo(assignmentId, currentUserId, attemptNo);
         if (existingAttempt.isPresent()) {
             throw new RuntimeException("Submission attempt already exists for attemptNo=" + attemptNo);
         }
 
         AssignmentSubmission s = new AssignmentSubmission();
         s.setAssignment(assignment);
-        s.setStudentId(current.getId());
+        s.setStudentId(currentUserId);
         s.setAttemptNo(attemptNo);
         s.setTextAnswer(req.textAnswer());
         s.setStatus(SubmissionStatus.DRAFT);
@@ -92,20 +92,20 @@ public class AssignmentSubmissionService {
     }
 
     public AssignmentSubmissionResponse getSubmission(Long id) throws AccessDeniedException {
-        User current = userService.getCurrentUser();
+        Long currentUserId = userService.getCurrentUserId();
 
         AssignmentSubmission s = submissionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Submission not found with id: " + id));
 
         // owner or teacher/admin of the course can view
-        if (s.getStudentId().equals(current.getId())) {
+        if (s.getStudentId().equals(currentUserId)) {
             return toResponse(s);
         }
 
         // teacher/admin: check if they are teacher of the course or admin
         Course course = s.getAssignment().getCourse();
-        boolean isAdmin = current.getRole() == UserRole.ADMIN;
-        boolean isCourseCreator = course.getCreatedById() != null && course.getCreatedById().equals(current.getId());
+        boolean isAdmin = userService.hasRole("ADMIN");
+        boolean isCourseCreator = course.getCreatedById() != null && course.getCreatedById().equals(currentUserId);
 
         if (!isAdmin && !isCourseCreator) {
             throw new AccessDeniedException("Not allowed to view this submission");
@@ -115,13 +115,13 @@ public class AssignmentSubmissionService {
     }
 
     public Page<AssignmentSubmissionResponse> listSubmissionsForAssignment(Long assignmentId, Pageable pageable) throws AccessDeniedException {
-        User current = userService.getCurrentUser();
+        Long currentUserId = userService.getCurrentUserId();
         Assignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new RuntimeException("Assignment not found with id: " + assignmentId));
 
         Course course = assignment.getCourse();
-        boolean isAdmin = current.getRole() == UserRole.ADMIN;
-        boolean isCourseCreator = course.getCreatedById() != null && course.getCreatedById().equals(current.getId());
+        boolean isAdmin = userService.hasRole("ADMIN");
+        boolean isCourseCreator = course.getCreatedById() != null && course.getCreatedById().equals(currentUserId);
 
         if (!isAdmin && !isCourseCreator) {
             throw new AccessDeniedException("Only course teachers or admins can list submissions");
@@ -132,19 +132,19 @@ public class AssignmentSubmissionService {
     }
 
     public Page<AssignmentSubmissionResponse> listMySubmissions(Pageable pageable) {
-        User current = userService.getCurrentUser();
-        Page<AssignmentSubmission> page = submissionRepository.findByStudentId(current.getId(), pageable);
+        Long currentUserId = userService.getCurrentUserId();
+        Page<AssignmentSubmission> page = submissionRepository.findByStudentId(currentUserId, pageable);
         return page.map(this::toResponse);
     }
 
     @Transactional
     public AssignmentSubmissionResponse updateSubmission(Long id, AssignmentSubmissionRequest req) throws AccessDeniedException {
-        User current = userService.getCurrentUser();
+        Long currentUserId = userService.getCurrentUserId();
 
         AssignmentSubmission s = submissionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Submission not found with id: " + id));
 
-        if (!s.getStudentId().equals(current.getId())) {
+        if (!s.getStudentId().equals(currentUserId)) {
             throw new AccessDeniedException("Only submission owner can update the submission");
         }
 
@@ -159,7 +159,7 @@ public class AssignmentSubmissionService {
         if (req.attemptNo() != null && req.attemptNo() != s.getAttemptNo()) {
             // check uniqueness
             Optional<AssignmentSubmission> existing = submissionRepository
-                    .findByAssignmentIdAndStudentIdAndAttemptNo(s.getAssignment().getId(), current.getId(), req.attemptNo());
+                    .findByAssignmentIdAndStudentIdAndAttemptNo(s.getAssignment().getId(), currentUserId, req.attemptNo());
             if (existing.isPresent()) {
                 throw new RuntimeException("Another submission exists with attemptNo=" + req.attemptNo());
             }
@@ -171,12 +171,12 @@ public class AssignmentSubmissionService {
 
     @Transactional
     public AssignmentSubmissionResponse submitSubmission(Long id) throws AccessDeniedException {
-        User current = userService.getCurrentUser();
+        Long currentUserId = userService.getCurrentUserId();
 
         AssignmentSubmission s = submissionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Submission not found with id: " + id));
 
-        if (!s.getStudentId().equals(current.getId())) {
+        if (!s.getStudentId().equals(currentUserId)) {
             throw new AccessDeniedException("Only submission owner can submit");
         }
 
@@ -205,7 +205,7 @@ public class AssignmentSubmissionService {
 
     @Transactional
     public AssignmentSubmissionResponse gradeSubmission(Long id, GradeSubmissionRequest req) throws AccessDeniedException {
-        User current = userService.getCurrentUser();
+        Long currentUserId = userService.getCurrentUserId();
 
         AssignmentSubmission s = submissionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Submission not found with id: " + id));
@@ -213,8 +213,8 @@ public class AssignmentSubmissionService {
         Assignment assignment = s.getAssignment();
         Course course = assignment.getCourse();
 
-        boolean isAdmin = current.getRole() == UserRole.ADMIN;
-        boolean isCourseCreator = course.getCreatedById() != null && course.getCreatedById().equals(current.getId());
+        boolean isAdmin = userService.hasRole("ADMIN");
+        boolean isCourseCreator = course.getCreatedById() != null && course.getCreatedById().equals(currentUserId);
 
         if (!isAdmin && !isCourseCreator) {
             throw new AccessDeniedException("Only course teachers or admins can grade submissions");
@@ -232,7 +232,7 @@ public class AssignmentSubmissionService {
         }
 
         s.setGradedAt(Instant.now());
-        s.setGradedById(current.getId());
+        s.setGradedById(currentUserId);
         s.setStatus(SubmissionStatus.GRADED);
 
         return toResponse(s);
@@ -240,12 +240,11 @@ public class AssignmentSubmissionService {
 
     @Transactional
     public void deleteSubmission(Long id) throws AccessDeniedException {
-        User current = userService.getCurrentUser();
-
+        Long currentUserId = userService.getCurrentUserId();
         AssignmentSubmission s = submissionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Submission not found with id: " + id));
 
-        if (s.getStudentId().equals(current.getId())) {
+        if (s.getStudentId().equals(currentUserId)) {
             // owner can delete only DRAFT
             if (s.getStatus() != SubmissionStatus.DRAFT) {
                 throw new RuntimeException("Only DRAFT submissions can be deleted by owner");
@@ -256,8 +255,8 @@ public class AssignmentSubmissionService {
 
         // admins or course creators can delete any
         Assignment assignment = s.getAssignment();
-        boolean isAdmin = current.getRole() == UserRole.ADMIN;
-        boolean isCourseCreator = assignment.getCourse().getCreatedById() != null && assignment.getCourse().getCreatedById().equals(current.getId());
+        boolean isAdmin = userService.hasRole("ADMIN");
+        boolean isCourseCreator = assignment.getCourse().getCreatedById() != null && assignment.getCourse().getCreatedById().equals(currentUserId);
 
         if (!isAdmin && !isCourseCreator) {
             throw new AccessDeniedException("Not allowed to delete this submission");
@@ -286,4 +285,3 @@ public class AssignmentSubmissionService {
         );
     }
 }
-

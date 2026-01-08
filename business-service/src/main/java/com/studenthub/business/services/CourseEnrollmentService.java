@@ -4,7 +4,7 @@ package com.studenthub.business.services;
 import com.studenthub.business.dtos.CourseEnrollmentRequest;
 import com.studenthub.business.entities.Course;
 import com.studenthub.business.entities.CourseEnrollment;
-import com.studenthub.business.entities.User;
+import com.studenthub.business.entities.UserProfile;
 import com.studenthub.business.enums.EnrollmentStatus;
 import com.studenthub.business.enums.UserRole;
 import com.studenthub.business.repositories.CourseEnrollmentRepository;
@@ -31,20 +31,20 @@ public class CourseEnrollmentService {
 
     public CourseEnrollment createEnrollment(CourseEnrollmentRequest request) {
         Long courseId = request.courseId();
-        User user = userService.getCurrentUser();
+        Long currentUserId = userService.getCurrentUserId();
 
-        if (user.getRole() != UserRole.STUDENT) {
+        if (!userService.hasRole("STUDENT")) {
             throw new RuntimeException("Only students can enroll in courses.");
         }
 
-        if (enrollmentRepository.existsByCourseIdAndUserId(courseId, user.getId())) {
+        if (enrollmentRepository.existsByCourseIdAndUserId(courseId, currentUserId)) {
             throw new RuntimeException("User is already enrolled in this course.");
         }
 
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found with id: " + courseId));
 
-        CourseEnrollment enrollment = new CourseEnrollment(course, user.getId(), request.role());
+        CourseEnrollment enrollment = new CourseEnrollment(course, currentUserId, request.role());
 
         return enrollmentRepository.save(enrollment);
     }

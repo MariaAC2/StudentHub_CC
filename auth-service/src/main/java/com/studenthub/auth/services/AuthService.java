@@ -1,70 +1,67 @@
-package com.student_hub.services;
+package com.studenthub.auth.services;
 
-import com.student_hub.dtos.LoginRequest;
-import com.student_hub.dtos.RegisterRequest;
-import com.student_hub.dtos.TokenResponse;
-import com.student_hub.entities.User;
-import com.student_hub.enums.UserRole;
-import com.student_hub.repositories.UserRepository;
+import com.studenthub.auth.entities.User;
+import com.studenthub.auth.repositories.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 
 @Service
 public class AuthService {
 
-    private final JwtEncoder jwtEncoder;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtEncoder jwtEncoder;
 
-    public AuthService(JwtEncoder jwtEncoder,
-                       UserRepository userRepository,
-                       PasswordEncoder passwordEncoder) {
-        this.jwtEncoder = jwtEncoder;
+    @Value("${security.jwt.issuer}")
+    private String issuer;
+
+    @Value("${security.jwt.expiration-seconds:3600}")
+    private long expirationSeconds;
+
+    public AuthService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            JwtEncoder jwtEncoder
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtEncoder = jwtEncoder;
     }
 
-    public void register(RegisterRequest request) {
-
-        String email = request.email().trim().toLowerCase();
-
-        if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("Email already registered");
-        }
-
-        User user = new User(request.name().trim(), email, passwordEncoder.encode(request.password()));
-
-        userRepository.save(user);
-    }
-
-    public TokenResponse login(LoginRequest request) {
-
-        User user = userRepository.findByEmail(request.email())
+    public String login(String email, String rawPassword) {
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Invalid credentials"));
 
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
             throw new RuntimeException("Invalid credentials");
         }
 
-        String token = jwtEncoder.encode(
-                JwtEncoderParameters.from(
-                        JwsHeader.with(MacAlgorithm.HS256).build(),
-                        JwtClaimsSet.builder()
-                                .subject(user.getId().toString())
-                                .claim("roles", user.getRole().name())
-                                .issuedAt(Instant.now())
-                                .expiresAt(Instant.now().plusSeconds(604800)) // 7 days
-                                .build()
-                )
-        ).getTokenValue();
+        return generateToken(user);
+    }
 
-        return new TokenResponse(token);
+    private String generateToken(User user) {
+        Instant now = Instant.now();
+
+        String role = user.getRole().name(); // ADMIN / TEACHER / STUDENT
+
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer(issuer)                             // iss
+                .issuedAt(now)
+                .expiresAt(now.plus(Duration.ofDays(7)))    // ⬅ expires in 7 days
+                .subject(user.getId().toString())           // sub = user id
+                .claim("role", role)                        // single role claim
+                .build();
+
+        return jwtEncoder.encode(JwtEncoderParameters.from(claims))
+                .getTokenValue();
     }
 }
+
