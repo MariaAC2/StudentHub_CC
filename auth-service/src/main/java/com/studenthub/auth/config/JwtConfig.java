@@ -1,6 +1,10 @@
 package com.studenthub.auth.config;
 
-import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.OctetSequenceKey;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,6 +37,16 @@ public class JwtConfig {
 
     @Bean
     public JwtEncoder jwtEncoder() {
-        return new NimbusJwtEncoder(new ImmutableSecret<>(secretKey()));
+        byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
+
+        // Build a JWK with the HS256 algorithm so the encoder can select it
+        OctetSequenceKey jwk = new OctetSequenceKey.Builder(secretBytes)
+                .algorithm(JWSAlgorithm.HS256)
+                .build();
+
+        JWKSet jwkSet = new JWKSet(jwk);
+        JWKSource<SecurityContext> jwkSource = (jwkSelector, context) -> jwkSelector.select(jwkSet);
+
+        return new NimbusJwtEncoder(jwkSource);
     }
 }

@@ -3,13 +3,13 @@ package com.studenthub.auth.services;
 import com.studenthub.auth.dtos.LoginRequest;
 import com.studenthub.auth.dtos.RegisterRequest;
 import com.studenthub.auth.dtos.TokenResponse;
-import com.studenthub.auth.dtos.TokenResponse;
 import com.studenthub.auth.entities.User;
 import com.studenthub.auth.enums.UserRole;
 import com.studenthub.auth.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,6 +72,7 @@ public class AuthService {
         User saved = userRepository.save(user);
 
         String token = generateToken(saved);
+        System.out.println("Generated token for user " + saved.getId() + ": " + token);
         return new TokenResponse(saved.getId(), token);
     }
 
@@ -96,10 +97,14 @@ public class AuthService {
                 .issuedAt(now)
                 .expiresAt(now.plus(Duration.ofDays(7))) // 7 days
                 .subject(user.getId().toString())        // sub = user id
-                .claim("role", role)
+                .claim("roles", java.util.List.of(role))
                 .build();
 
-        return jwtEncoder.encode(JwtEncoderParameters.from(claims))
+        // Explicitly provide a JWS header with the HMAC algorithm so the encoder can select the matching key
+        JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS256).build();
+        JwtEncoderParameters params = JwtEncoderParameters.from(jwsHeader, claims);
+
+        return jwtEncoder.encode(params)
                 .getTokenValue();
     }
 }
