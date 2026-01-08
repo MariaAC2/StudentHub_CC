@@ -30,3 +30,12 @@ spec:
               value: update
             - name: SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT
               value: org.hibernate.dialect.PostgreSQLDialect
+
+            - name: SECURITY_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: studenthub-jwt
+                  key: secret
+
+            - name: SECURITY_JWT_ISSUER
+              value: studenthub
