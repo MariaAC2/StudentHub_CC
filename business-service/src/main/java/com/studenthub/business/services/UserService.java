@@ -1,7 +1,8 @@
 package com.studenthub.business.services;
 
-import com.studenthub.business.dtos.UserProfileResponse;
-import com.studenthub.business.dtos.UserUpdateRequest;
+import com.studenthub.business.clients.AuthServiceClient;
+import com.studenthub.business.dtos.RegisterRequest;
+import com.studenthub.business.dtos.*;
 import com.studenthub.business.entities.UserProfile;
 import com.studenthub.business.enums.TeacherRequestStatus;
 import com.studenthub.business.repositories.UserProfileRepository;
@@ -21,10 +22,43 @@ import java.util.Optional;
 public class UserService {
 
     private final UserProfileRepository userProfileRepository;
+    private final AuthServiceClient authServiceClient;
 
-    public UserService(UserProfileRepository userProfileRepository) {
+    public UserService(UserProfileRepository userProfileRepository, AuthServiceClient authServiceClient) {
         this.userProfileRepository = userProfileRepository;
+        this.authServiceClient = authServiceClient;
     }
+
+    @Transactional
+    public RegisterResponse register(RegisterRequest req) {
+        // 1) validate
+        // 2) call auth-service register
+        AuthRegisterResponse auth = authServiceClient.register(req.email(), req.password(), "STUDENT");
+
+        // 3) create profile
+        UserProfile profile = new UserProfile();
+        profile.setId(auth.id());
+        profile.setName(req.name());
+
+        if (req.requestTeacher()) {
+            profile.setTeacherRequestStatus(TeacherRequestStatus.PENDING);
+            profile.setTeacherRequestedAt(Instant.now());
+        } else {
+            profile.setTeacherRequestStatus(TeacherRequestStatus.NONE);
+        }
+
+        try {
+            userProfileRepository.save(profile);
+        } catch (Exception e) {
+            // 4) compensation (optional but good)
+            authServiceClient.deleteUser(auth.id());
+            throw e;
+        }
+
+        // 5) return combined response
+        return new RegisterResponse(auth.token(), profileToDto(profile));
+    }
+
 
     // -------------------------
     // Teacher request workflow
@@ -211,6 +245,18 @@ public class UserService {
                 p.getId(),
                 p.getName(),
                 // email/role nu mai există în business-service
+                p.getTeacherRequestStatus(),
+                p.getTeacherRequestedAt(),
+                p.getTeacherReviewedAt(),
+                p.getTeacherReviewNote(),
+                p.getTeacherRequestNote()
+        );
+    }
+
+    private UserProfileResponse profileToDto(UserProfile p) {
+        return new UserProfileResponse(
+                p.getId(),
+                p.getName(),
                 p.getTeacherRequestStatus(),
                 p.getTeacherRequestedAt(),
                 p.getTeacherReviewedAt(),
