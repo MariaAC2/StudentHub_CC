@@ -27,7 +27,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // allow CORS preflight
-                        .requestMatchers(HttpMethod.POST, "/auth/register", "auth/login", "auth/validate").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(authServiceAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

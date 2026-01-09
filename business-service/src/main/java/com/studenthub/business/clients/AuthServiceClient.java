@@ -27,17 +27,14 @@ public class AuthServiceClient {
         this.baseUrl = baseUrl;
     }
 
-    @PostConstruct
-    void log() {
-        System.out.println("AUTH BASE URL = " + baseUrl);
-    }
-
     public AuthRegisterResponse register(String email, String password, String role) {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Content-Type", "application/json");
 
         AuthRegisterRequest payload = new AuthRegisterRequest(email, password, role);
         HttpEntity<AuthRegisterRequest> entity = new HttpEntity<>(payload, headers);
+
+        System.out.println("AUTH BASE URL = " + baseUrl);
 
         try {
             ResponseEntity<AuthRegisterResponse> response = restTemplate.exchange(
