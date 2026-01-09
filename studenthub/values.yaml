@@ -2,16 +2,16 @@ auth:
   replicas: 1
   containerPort: 8080
   image:
-    repository: mariaac53695/studenthub-auth
-    tag: "1.1"
+    repository: studenthub-auth
+    tag: "1.2"
     pullPolicy: IfNotPresent
 
 business:
   replicas: 1
   containerPort: 8080
   image:
-    repository: mariaac53695/studenthub-business
-    tag: "1.0"
+    repository: studenthub-business
+    tag: "1.2"
     pullPolicy: IfNotPresent
 
 postgres:
@@ -31,3 +31,5 @@ postgres:
     auth: auth_db
     business: business_db
 
+jwt:
+  secret: "blahblahfunfun123123doamenterogomoaramacatmaitrb sa treaisec asa"

@@ -1,8 +1,6 @@
 package com.studenthub.business.controllers;
 
-import com.studenthub.business.dtos.RequestTeacherRoleRequest;
-import com.studenthub.business.dtos.UserProfileResponse;
-import com.studenthub.business.dtos.UserUpdateRequest;
+import com.studenthub.business.dtos.*;
 import com.studenthub.business.services.UserService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +13,12 @@ public class UserController {
 
     public UserController(UserService userService) {
         this.userService = userService;
+    }
+
+    //register
+    @PostMapping("/register")
+    public RegisterResponse registerUser(@RequestBody RegisterRequest request) {
+        return userService.register(request);
     }
 
     // View my profile
