@@ -2,7 +2,7 @@ auth:
   replicas: 1
   containerPort: 8080
   image:
-    repository: studenthub-auth
+    repository: mariaac53695/studenthub-auth
     tag: "1.2"
     pullPolicy: IfNotPresent
 
@@ -10,7 +10,7 @@ business:
   replicas: 1
   containerPort: 8080
   image:
-    repository: studenthub-business
+    repository: mariaac53695/studenthub-business
     tag: "1.2"
     pullPolicy: IfNotPresent
 

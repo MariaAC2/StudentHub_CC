@@ -2,6 +2,7 @@ package com.studenthub.business.clients;
 
 import com.studenthub.business.dtos.AuthRegisterRequest;
 import com.studenthub.business.dtos.AuthRegisterResponse;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
@@ -24,6 +25,11 @@ public class AuthServiceClient {
     ) {
         this.restTemplate = restTemplateBuilder.build();
         this.baseUrl = baseUrl;
+    }
+
+    @PostConstruct
+    void log() {
+        System.out.println("AUTH BASE URL = " + baseUrl);
     }
 
     public AuthRegisterResponse register(String email, String password, String role) {
