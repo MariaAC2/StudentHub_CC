@@ -15,12 +15,6 @@ public class UserController {
         this.userService = userService;
     }
 
-    //register
-    @PostMapping("/auth/register")
-    public RegisterResponse registerUser(@RequestBody RegisterRequest request) {
-        return userService.register(request);
-    }
-
     // View my profile
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/users/me")

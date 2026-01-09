@@ -1,6 +1,5 @@
 package com.studenthub.business.config;
 
-import com.studenthub.business.config.AuthServiceAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -27,7 +26,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // allow CORS preflight
-                        .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(authServiceAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

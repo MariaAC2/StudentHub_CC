@@ -32,12 +32,12 @@ public class AuthController {
 
     @GetMapping("/validate")
     public ValidateTokenResponse validate(Authentication authentication) {
-
         Jwt jwt = (Jwt) authentication.getPrincipal();
 
-        assert jwt != null;
         Long userId = Long.valueOf(jwt.getSubject());
-        String role = jwt.getClaim("roles");
+
+        var roles = jwt.getClaimAsStringList("roles"); // ✅ list
+        String role = (roles != null && !roles.isEmpty()) ? roles.get(0) : null;
 
         return new ValidateTokenResponse(userId, role);
     }

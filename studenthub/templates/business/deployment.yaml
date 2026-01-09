@@ -21,7 +21,7 @@ spec:
           ports:
             - containerPort: {{ .Values.business.containerPort }}
           env:
-            - name: AUTH_SERVICE_BASE_URL
+            - name: AUTH_SERVICE_URL
               value: "http://studenthub-auth"
 
             - name: SPRING_DATASOURCE_URL
