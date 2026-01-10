@@ -48,6 +48,12 @@ $pw = kubectl get secret -n monitoring monitoring-grafana -o jsonpath="{.data.ad
 kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 9090
 promsql: container_cpu_usage_seconds_total
 
+8) Test
+kubectl port-forward -n studenthub svc/studenthub-auth 8081:80
+kubectl port-forward -n studenthub svc/studenthub-business 8082:80
+
+
+
 
 
 
