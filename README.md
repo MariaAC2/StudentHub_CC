@@ -1,6 +1,8 @@
 ﻿# StudentHub_CC
 
-Helm-based Kubernetes deployment for the **StudentHub** microservices platform (Auth, Business, PostgreSQL) with **Metrics Server**, **Prometheus**, and **Grafana**.
+### Created by: Chirnogeanu Maria-Andreea & Pauna Irina-Catrinel
+
+Helm-based Kubernetes deployment for the **StudentHub** microservices platform (Auth, Business, PostgreSQL, Adminer) with **Metrics Server**, **Prometheus**, and **Grafana**.
 
 ---
 
@@ -68,7 +70,7 @@ kubectl get pods -n studenthub
 
 ---
 
-## 3. Install Metrics Server
+## 4. Install Metrics Server
 
 Add repo + install:
 
@@ -90,7 +92,7 @@ kubectl top pods -n studenthub
 
 ---
 
-## 4. Prometheus + Grafana (kube-prometheus-stack)
+## 4. Install Prometheus & Grafana (using kube-prometheus-stack)
 
 Add repo:
 
@@ -107,24 +109,9 @@ helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
   --set prometheus-node-exporter.enabled=false
 ```
 
-### Optional: Docker Desktop kubelet TLS workaround
-
-If you see missing kubelet targets/metrics:
-
-```bash
-helm upgrade monitoring prometheus-community/kube-prometheus-stack -n monitoring \
-  --set prometheus.prometheusSpec.kubeletServiceMonitor.insecureSkipVerify=true \
-  --set prometheus.prometheusSpec.kubeletServiceMonitor.https=true \
-  --set prometheus.prometheusSpec.kubeletServiceMonitor.scheme=https \
-  --set prometheus.prometheusSpec.externalLabels.cluster=docker-desktop
-
-kubectl rollout restart -n monitoring statefulset/prometheus-monitoring-kube-prometheus-prometheus
-kubectl rollout status  -n monitoring statefulset/prometheus-monitoring-kube-prometheus-prometheus
-```
-
 ---
 
-## 5. Grafana
+## 5. How to Run Grafana
 
 Port-forward:
 
@@ -147,7 +134,7 @@ Default username: `admin`
 
 ---
 
-## 6. Prometheus
+## 6. How to Run Prometheus
 
 Port-forward:
 
@@ -167,7 +154,7 @@ container_cpu_usage_seconds_total
 
 ---
 
-## 7. Test services (port-forward)
+## 7. How to Run App Services
 
 Auth service:
 

@@ -33,9 +33,11 @@ postgres:
 
 adminer:
   enabled: true
-  image: adminer
-  tag: latest
-  port: 8080
+  image:
+    repository: adminer
+    tag: latest
+  service:
+    port: 80
 
 jwt:
   secret: "3EOXRTOvFaixVY2Vs6dHLW1wGhE5Bm1hGlOay1yhxUcCdegl8zCRXm9zwSZx1I80"
