@@ -72,7 +72,41 @@ kubectl get pods -n studenthub
 
 ---
 
-## 4. Install Metrics Server
+## 4. Install Portainer
+
+Add repo + install:
+
+```bash
+helm repo add portainer https://portainer.github.io/k8s/
+helm repo update
+
+>> helm upgrade --install portainer portainer/portainer \                                                                                                                           
+>>   -n portainer --create-namespace \                                                                                                                                             
+>>   --set service.type=ClusterIP
+```
+
+Verify:
+
+```bash
+kubectl get pods -n portainer
+kubectl get svc -n portainer
+```
+
+Deploy the Portainer Agent into the cluster:
+
+```bash
+kubectl apply -f https://downloads.portainer.io/ce2-33/portainer-agent-k8s-lb.yaml
+```
+
+Verify the agent is running:
+
+```bash
+kubectl get pods -n portainer
+kubectl get svc -n portainer | findstr agent
+```
+---
+
+## 5. Install Metrics Server
 
 Add repo + install:
 
@@ -94,7 +128,7 @@ kubectl top pods -n studenthub
 
 ---
 
-## 4. Install Prometheus & Grafana (using kube-prometheus-stack)
+## 6. Install Prometheus & Grafana (using kube-prometheus-stack)
 
 Add repo:
 
@@ -176,11 +210,62 @@ Open:
 
 ---
 
-## 2. Monitoring & Observability
+## 2. Portainer UI
+
+Portainer provides a web UI for managing and inspecting Kubernetes resources (namespaces, deployments, pods, logs, services).
+
+### 2.1. Access Portainer UI
+
+Port-forward:
+
+```bash
+kubectl port-forward -n portainer svc/portainer 9000:9000
+```
+
+Open:
+* [http://localhost:9000](http://localhost:9000)
+
+Log in:
+* Username: `admin`
+* Password: `Cherestea!123` (set during first login)
+
+---
+
+### 2.2 Connect Portainer to the Kubernetes cluster
+
+After login, Portainer may show an **Environment Wizard**.
+
+1. Select **Kubernetes** → **Agent**
+2. Set **Name**: `docker-desktop`
+3. Set **Environment address**:
+
+```text
+portainer-agent.portainer.svc.cluster.local:9001
+```
+
+4. Click **Connect**
+
+> If the DNS name above does not work, try: `portainer-agent:9001`.
+
+---
+
+### 2.3 Verify StudentHub workloads in Portainer
+
+In Portainer:
+
+1. Open the connected environment (**docker-desktop**)
+2. Go to **Namespaces** → select **studenthub**
+3. Confirm the workloads are visible (e.g., `studenthub-auth`, `studenthub-business`, `postgres`, `adminer`)
+
+This confirms Portainer is connected and can inspect/manage the StudentHub Kubernetes resources.
+
+---
+
+## 3. Monitoring & Observability
 
 These services are part of the platform/infrastructure (used by developers/DevOps).
 
-### 2.1 Grafana
+### 3.1 Grafana
 
 Port-forward:
 
@@ -206,7 +291,7 @@ $pw = kubectl get secret -n monitoring monitoring-grafana -o jsonpath="{.data.ad
 
 ---
 
-### 2.2 Prometheus
+### 3.2 Prometheus
 
 Port-forward:
 
@@ -224,5 +309,36 @@ Example PromQL query (computes the real-time CPU usage per StudentHub pod by cal
 sum by (pod) (
   rate(container_cpu_usage_seconds_total{namespace="studenthub"}[5m])
 )
+```
+
+# Project Archive Structure
+
+```
+StudentHub_CC_Final_Project/
+├── auth-service/
+│    ├── app + Dockerfile
+├── business-service/
+│    ├── app + Dockerfile
+├── studenthub/
+│    ├── Chart.yaml
+│    ├── values.yaml
+│    ├── templates/
+│    │   ├── jwt-secret.yaml
+│    │   ├── auth/
+│    │   │   ├── deployment.yaml
+│    │   │   └── service.yaml
+│    │   ├── business/
+│    │   │   ├── deployment.yaml
+│    │   │   └── service.yaml
+│    │   ├── postgres/
+│    │   │   ├── postgres.yaml
+│    │   └── adminer/
+│    │       ├── adminer.yaml
+├── images/
+│   ├── adminer <- Images containing DB management tool
+│   ├── grafana <- Images containing Grafana setup + dashboard
+│   ├── prometheus <- Images containing Prometheus table + graph
+    ├── portainer <- Images containing Portainer setup + namespaces
+└── README.md
 ```
 
