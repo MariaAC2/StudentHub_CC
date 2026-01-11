@@ -5,6 +5,13 @@ auth:
     repository: mariaac53695/studenthub-auth
     tag: "1.2"
     pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
 business:
   replicas: 1
@@ -13,6 +20,13 @@ business:
     repository: mariaac53695/studenthub-business
     tag: "1.2"
     pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
 postgres:
   image:

@@ -16,6 +16,8 @@ spec:
         - name: auth
           image: "{{ .Values.auth.image.repository }}:{{ .Values.auth.image.tag }}"
           imagePullPolicy: {{ .Values.auth.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.auth.resources | nindent 12 }}
           ports:
             - containerPort: {{ .Values.auth.containerPort }}
           env:

@@ -6,6 +6,8 @@ Helm-based Kubernetes deployment for the **StudentHub** microservices platform (
 
 ---
 
+# Cluster Setup & Deployment
+
 ## Prerequisites
 
 * Docker Desktop (Kubernetes enabled)
@@ -43,12 +45,12 @@ From the project root:
 
 ```bash
 # Auth service
-docker build -t <YOUR_DOCKER_USERNAME>/studenthub-auth:1.2 ./auth
-docker push <YOUR_DOCKER_USERNAME>/studenthub-auth:1.2
+docker build -t mariaac53695/studenthub-auth:1.2 ./auth
+docker push mariaac53695/studenthub-auth:1.2
 
 # Business service
-docker build -t <YOUR_DOCKER_USERNAME>/studenthub-business:1.2 ./business
-docker push <YOUR_DOCKER_USERNAME>/studenthub-business:1.2
+docker build -t mariaac53695/studenthub-business:1.2 ./business
+docker push mariaac53695/studenthub-business:1.2
 ```
 
 Verify images:
@@ -109,9 +111,76 @@ helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
   --set prometheus-node-exporter.enabled=false
 ```
 
+### Optional: Docker Desktop kubelet TLS workaround
+
+If you get `Unable to connect to the server: net/http: TLS handshake timeout` error, run:
+
+```bash
+helm upgrade monitoring prometheus-community/kube-prometheus-stack -n monitoring \
+  --set prometheus.prometheusSpec.kubeletServiceMonitor.insecureSkipVerify=true \
+  --set prometheus.prometheusSpec.kubeletServiceMonitor.https=true \
+  --set prometheus.prometheusSpec.kubeletServiceMonitor.scheme=https \
+  --set prometheus.prometheusSpec.externalLabels.cluster=docker-desktop
+
+kubectl rollout restart -n monitoring statefulset/prometheus-monitoring-kube-prometheus-prometheus
+kubectl rollout status  -n monitoring statefulset/prometheus-monitoring-kube-prometheus-prometheus
+```
+
 ---
 
-## 5. How to Run Grafana
+# Running the System (Port-forwards)
+
+This section explains how to access the deployed **StudentHub** application services and the **monitoring/observability** stack from your local machine using `kubectl port-forward`.
+
+> **Tip:** Keep each port-forward running in its own terminal window/tab.
+
+---
+
+## 1. Application Services
+
+These are the services that make up the StudentHub application (what users interact with).
+
+### 1.1 Auth service
+
+```bash
+kubectl port-forward -n studenthub svc/studenthub-auth 8081:80
+```
+
+Open:
+
+* [http://localhost:8081](http://localhost:8081)
+
+---
+
+### 1.2 Business service
+
+```bash
+kubectl port-forward -n studenthub svc/studenthub-business 8082:80
+```
+
+Open:
+
+* [http://localhost:8082](http://localhost:8082)
+
+---
+
+### 1.3 Adminer
+
+```bash
+kubectl port-forward -n studenthub svc/adminer 8083:80
+```
+
+Open:
+
+* [http://localhost:8083](http://localhost:8083)
+
+---
+
+## 2. Monitoring & Observability
+
+These services are part of the platform/infrastructure (used by developers/DevOps).
+
+### 2.1 Grafana
 
 Port-forward:
 
@@ -123,18 +192,21 @@ Open:
 
 * [http://localhost:3000](http://localhost:3000)
 
-Get admin password:
+Log in:
+
+* Username: `admin`
+* Password: `Uflr1wB8ac51k0ekigP2JJQWPHS86KEBA72udAWQ`
+
+Get admin password (PowerShell):
 
 ```powershell
 $pw = kubectl get secret -n monitoring monitoring-grafana -o jsonpath="{.data.admin-password}"
 [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($pw))
 ```
 
-Default username: `admin`
-
 ---
 
-## 6. How to Run Prometheus
+### 2.2 Prometheus
 
 Port-forward:
 
@@ -146,36 +218,11 @@ Open:
 
 * [http://localhost:9090](http://localhost:9090)
 
-Example PromQL:
+Example PromQL query (computes the real-time CPU usage per StudentHub pod by calculating the rate of CPU time consumed over the last 5 minutes):
 
 ```text
-container_cpu_usage_seconds_total
+sum by (pod) (
+  rate(container_cpu_usage_seconds_total{namespace="studenthub"}[5m])
+)
 ```
 
----
-
-## 7. How to Run App Services
-
-Auth service:
-
-```bash
-kubectl port-forward -n studenthub svc/studenthub-auth 8081:80
-```
-
-Business service:
-
-```bash
-kubectl port-forward -n studenthub svc/studenthub-business 8082:80
-```
-
-Adminer:
-
-```bash
-kubectl port-forward -n studenthub svc/adminer 8083:80
-```
-
-Endpoints:
-
-* **Auth** → [http://localhost:8081](http://localhost:8081)
-* **Business** → [http://localhost:8082](http://localhost:8082)
-* **Adminer** → [http://localhost:8083](http://localhost:8083)
