@@ -31,5 +31,11 @@ postgres:
     auth: auth_db
     business: business_db
 
+adminer:
+  enabled: true
+  image: adminer
+  tag: latest
+  port: 8080
+
 jwt:
-  secret: "blahblahfunfun123123doamenterogomoaramacatmaitrb sa treaisec asa"
+  secret: "3EOXRTOvFaixVY2Vs6dHLW1wGhE5Bm1hGlOay1yhxUcCdegl8zCRXm9zwSZx1I80"

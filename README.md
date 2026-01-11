@@ -1,6 +1,6 @@
 ﻿# StudentHub_CC
 
-Helm-based Kubernetes deployment for the **StudentHub** microservices platform (Auth, Business, PostgreSQL, Adminer) with **Metrics Server**, **Prometheus**, and **Grafana**.
+Helm-based Kubernetes deployment for the **StudentHub** microservices platform (Auth, Business, PostgreSQL) with **Metrics Server**, **Prometheus**, and **Grafana**.
 
 ---
 
@@ -33,7 +33,31 @@ kubectl cluster-info
 
 ---
 
-## 2. Deploy StudentHub via Helm
+## 2. Build & Push Docker Images
+
+Each microservice is packaged as a Docker image and referenced by Helm via `values.yaml`.
+
+From the project root:
+
+```bash
+# Auth service
+docker build -t <YOUR_DOCKER_USERNAME>/studenthub-auth:1.2 ./auth
+docker push <YOUR_DOCKER_USERNAME>/studenthub-auth:1.2
+
+# Business service
+docker build -t <YOUR_DOCKER_USERNAME>/studenthub-business:1.2 ./business
+docker push <YOUR_DOCKER_USERNAME>/studenthub-business:1.2
+```
+
+Verify images:
+
+```bash
+docker images | findstr studenthub
+```
+
+---
+
+## 3. Deploy StudentHub via Helm
 
 From the Helm chart root:
 
@@ -157,7 +181,14 @@ Business service:
 kubectl port-forward -n studenthub svc/studenthub-business 8082:80
 ```
 
+Adminer:
+
+```bash
+kubectl port-forward -n studenthub svc/adminer 8083:80
+```
+
 Endpoints:
 
 * **Auth** → [http://localhost:8081](http://localhost:8081)
 * **Business** → [http://localhost:8082](http://localhost:8082)
+* **Adminer** → [http://localhost:8083](http://localhost:8083)
