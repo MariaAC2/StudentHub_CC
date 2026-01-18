@@ -14,6 +14,11 @@ public class UserController {
     public UserController(UserService userService) {
         this.userService = userService;
     }
+    // Register new user
+    @PostMapping("/auth/register")
+    public RegisterResponse registerUser(@RequestBody RegisterRequest request) {
+        return userService.register(request);
+    }
 
     // View my profile
     @PreAuthorize("isAuthenticated()")

@@ -1,3 +1,3 @@
 package com.studenthub.auth.dtos;
 
-public record TokenResponse(Long id, String accessToken) { }
+public record TokenResponse(Long id, String token) { }

@@ -3,7 +3,7 @@ auth:
   containerPort: 8080
   image:
     repository: mariaac53695/studenthub-auth
-    tag: "1.2"
+    tag: "1.8"
     pullPolicy: IfNotPresent
   resources:
     requests:
@@ -18,7 +18,7 @@ business:
   containerPort: 8080
   image:
     repository: mariaac53695/studenthub-business
-    tag: "1.2"
+    tag: "1.9"
     pullPolicy: IfNotPresent
   resources:
     requests:

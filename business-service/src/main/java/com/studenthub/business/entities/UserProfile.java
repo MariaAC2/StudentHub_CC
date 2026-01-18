@@ -1,5 +1,6 @@
 package com.studenthub.business.entities;
 
+import org.springframework.data.domain.Persistable;
 import com.studenthub.business.enums.TeacherRequestStatus;
 import com.studenthub.business.enums.UserRole;
 import jakarta.persistence.*;
@@ -8,9 +9,8 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "users")
-public class UserProfile {
+public class UserProfile implements Persistable<Long> {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
@@ -25,6 +25,9 @@ public class UserProfile {
     private String teacherReviewNote;
     private String teacherRequestNote;
 
+    @Transient
+    private boolean isNew = true;
+
     public UserProfile() {}
 
     public UserProfile(String name, String email, String password) {
@@ -35,8 +38,20 @@ public class UserProfile {
         this.name = name;
     }
 
+    @PostLoad
+    @PostPersist
+    void markNotNew() {
+        this.isNew = false;
+    }
+
+    @Override
     public Long getId() {
         return id;
+    }
+
+    @Override
+    public boolean isNew() {
+        return isNew;
     }
 
     public void setId(Long id) {
