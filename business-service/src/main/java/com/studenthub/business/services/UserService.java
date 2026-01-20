@@ -41,7 +41,7 @@ public class UserService {
         // 2) call auth-service register
         System.out.println("[REGISTER] Step 2 - calling auth-service");
         AuthRegisterResponse auth =
-                authServiceClient.register(req.email(), req.password(), "STUDENT");
+                authServiceClient.registerStudent(req.email(), req.password());
 
         System.out.println("[REGISTER] Auth-service returned id = " + auth.id());
 
@@ -87,18 +87,12 @@ public class UserService {
         System.out.println("[REGISTER_WITH_ROLE] role = " + role);
         System.out.println("[REGISTER_WITH_ROLE] requestTeacher = " + req.requestTeacher());
 
-        // 1) validate (same as your register; keep it minimal here)
-        if (req == null) throw new IllegalArgumentException("RegisterRequest is null");
-        if (req.email() == null || req.email().isBlank()) throw new IllegalArgumentException("Email is required");
-        if (req.password() == null || req.password().isBlank()) throw new IllegalArgumentException("Password is required");
-        if (role == null || role.isBlank()) role = "STUDENT";
-
         System.out.println("[REGISTER_WITH_ROLE] Step 1 - validation passed");
 
         // 2) call auth-service register with provided role
         System.out.println("[REGISTER_WITH_ROLE] Step 2 - calling auth-service");
         AuthRegisterResponse auth =
-                authServiceClient.register(req.email(), req.password(), role);
+                authServiceClient.registerWithRole(req.email(), req.password(), role);
 
         System.out.println("[REGISTER_WITH_ROLE] Auth-service returned id = " + auth.id());
 

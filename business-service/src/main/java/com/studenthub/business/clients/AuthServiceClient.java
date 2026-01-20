@@ -14,13 +14,16 @@ public class AuthServiceClient {
 
     private final RestTemplate restTemplate;
     private final String baseUrl;
+    private final String internalSecret;
 
     public AuthServiceClient(
             RestTemplateBuilder restTemplateBuilder,
-            @Value("${auth-service.base-url}") String baseUrl
+            @Value("${auth-service.base-url}") String baseUrl,
+            @Value("${internal.secret}") String internalSecret
     ) {
         this.restTemplate = restTemplateBuilder.build();
         this.baseUrl = baseUrl;
+        this.internalSecret = internalSecret;
     }
 
     public AuthRegisterResponse register(String email, String password, String role) {
@@ -49,18 +52,72 @@ public class AuthServiceClient {
         }
     }
 
-//    public void setRole(Long userId, String role) {
-//        String url = baseUrl + "/auth/internal/users/" + userId + "/role";
-//
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.setContentType(MediaType.APPLICATION_JSON);
-//        headers.set("X-INTERNAL-SECRET", internalSecret);
-//
-//        String body = "{\"role\":\"" + role + "\"}";
-//        HttpEntity<String> entity = new HttpEntity<>(body, headers);
-//
-//        restTemplate.exchange(url, HttpMethod.PATCH, entity, Void.class);
-//    }
+    public AuthRegisterResponse registerStudent(String email, String password) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // auth-service public register should NOT accept role
+        AuthRegisterRequest payload = new AuthRegisterRequest(email, password, null);
+        HttpEntity<AuthRegisterRequest> entity = new HttpEntity<>(payload, headers);
+
+        try {
+            ResponseEntity<AuthRegisterResponse> response = restTemplate.exchange(
+                    baseUrl + "/auth/register",
+                    HttpMethod.POST,
+                    entity,
+                    AuthRegisterResponse.class
+            );
+
+            AuthRegisterResponse body = response.getBody();
+            if (body == null || body.id() == null || body.token() == null) {
+                throw new IllegalStateException("Invalid auth-service register response");
+            }
+            return body;
+
+        } catch (RestClientException ex) {
+            throw new IllegalStateException("Auth-service register failed", ex);
+        }
+    }
+
+    public AuthRegisterResponse registerWithRole(String email, String password, String role) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("X-INTERNAL-SECRET", internalSecret);
+
+        AuthRegisterRequest payload = new AuthRegisterRequest(email, password, role);
+        HttpEntity<AuthRegisterRequest> entity = new HttpEntity<>(payload, headers);
+
+        try {
+            ResponseEntity<AuthRegisterResponse> response = restTemplate.exchange(
+                    baseUrl + "/auth/internal/register",
+                    HttpMethod.POST,
+                    entity,
+                    AuthRegisterResponse.class
+            );
+
+            AuthRegisterResponse body = response.getBody();
+            if (body == null || body.id() == null || body.token() == null) {
+                throw new IllegalStateException("Invalid auth-service internal register response");
+            }
+            return body;
+
+        } catch (RestClientException ex) {
+            throw new IllegalStateException("Auth-service internal register failed", ex);
+        }
+    }
+
+    public void setRole(Long userId, String role) {
+        String url = baseUrl + "/auth/internal/users/" + userId + "/role";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("X-INTERNAL-SECRET", internalSecret);
+
+        String body = "{\"role\":\"" + role + "\"}";
+        HttpEntity<String> entity = new HttpEntity<>(body, headers);
+
+        restTemplate.exchange(url, HttpMethod.PATCH, entity, Void.class);
+    }
 
     public void deleteUser(Long id) {
         try {

@@ -18,18 +18,6 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
-
-    @Bean
-    public ApplicationRunner securityChainsPrinter(ApplicationContext ctx) {
-        return args -> {
-            System.out.println("=== SecurityFilterChain beans ===");
-            for (String name : ctx.getBeanNamesForType(SecurityFilterChain.class)) {
-                System.out.println(name);
-            }
-            System.out.println("================================");
-        };
-    }
-
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -57,6 +45,7 @@ public class SecurityConfig {
     public SecurityFilterChain authPublicChain(HttpSecurity http) throws Exception {
         return http
                 .securityMatcher("/auth/register", "/auth/login")
+                .securityMatcher("/auth/internal/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)

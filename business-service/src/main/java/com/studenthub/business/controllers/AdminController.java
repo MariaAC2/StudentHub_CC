@@ -23,5 +23,14 @@ public class AdminController {
     ) {
         adminService.approveTeacher(userId, request.note());
     }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/teacher-requests/{userId}/reject")
+    public void rejectTeacher(
+            @PathVariable Long userId,
+            @RequestBody ApproveTeacherRequest request
+    ) {
+        adminService.rejectTeacher(userId, request.note());
+    }
 }
 

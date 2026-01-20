@@ -76,6 +76,38 @@ public class AuthService {
         return new TokenResponse(saved.getId(), token);
     }
 
+    @Transactional
+    public TokenResponse registerWithRole(RegisterRequest request) {
+        // same validation as register()
+
+        String email = request.email().trim().toLowerCase();
+        if (userRepository.existsByEmail(email)) {
+            throw new RuntimeException("Email already registered");
+        }
+
+        UserRole role = UserRole.valueOf(request.role().trim().toUpperCase()); // ADMIN allowed here
+
+        User user = new User();
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(request.password()));
+        user.setRole(role);
+
+        User saved = userRepository.save(user);
+
+        String token = generateToken(saved);
+        return new TokenResponse(saved.getId(), token);
+    }
+
+    @Transactional
+    public void updateRole(Long userId, String role) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        UserRole newRole = UserRole.valueOf(role.trim().toUpperCase());
+        user.setRole(newRole);
+        userRepository.save(user);
+    }
+
     public String login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email().trim().toLowerCase())
                 .orElseThrow(() -> new RuntimeException("Invalid credentials"));

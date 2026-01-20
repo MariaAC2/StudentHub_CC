@@ -41,3 +41,9 @@ spec:
 
             - name: SECURITY_JWT_ISSUER
               value: studenthub
+
+            - name: INTERNAL_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: internal-secret
+                  key: secret
