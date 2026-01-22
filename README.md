@@ -45,12 +45,12 @@ From the project root:
 
 ```bash
 # Auth service
-docker build -t mariaac53695/studenthub-auth:1.2 ./auth
-docker push mariaac53695/studenthub-auth:1.2
+docker build -t mariaac53695/studenthub-auth:2.3 ./auth
+docker push mariaac53695/studenthub-auth:2.3
 
 # Business service
-docker build -t mariaac53695/studenthub-business:1.2 ./business
-docker push mariaac53695/studenthub-business:1.2
+docker build -t mariaac53695/studenthub-business:2.1 ./business
+docker push mariaac53695/studenthub-business:2.1
 ```
 
 Verify images:

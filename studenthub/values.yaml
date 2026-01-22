@@ -3,7 +3,7 @@ auth:
   containerPort: 8080
   image:
     repository: mariaac53695/studenthub-auth
-    tag: "2.1"
+    tag: "2.3"
     pullPolicy: IfNotPresent
   resources:
     requests:
