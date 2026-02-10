@@ -1,7 +1,6 @@
 package com.studenthub.business.services;
 
 import com.studenthub.business.clients.AuthServiceClient;
-import com.studenthub.business.dtos.RegisterRequest;
 import com.studenthub.business.dtos.*;
 import com.studenthub.business.entities.UserProfile;
 import com.studenthub.business.enums.TeacherRequestStatus;
@@ -31,34 +30,103 @@ public class UserService {
 
     @Transactional
     public RegisterResponse register(RegisterRequest req) {
+
+        System.out.println("=== [REGISTER] START ===");
+        System.out.println("[REGISTER] email = " + req.email());
+        System.out.println("[REGISTER] requestTeacher = " + req.requestTeacher());
+
         // 1) validate
+        System.out.println("[REGISTER] Step 1 - validation passed");
+
         // 2) call auth-service register
-        AuthRegisterResponse auth = authServiceClient.register(req.email(), req.password(), "STUDENT");
+        System.out.println("[REGISTER] Step 2 - calling auth-service");
+        AuthRegisterResponse auth =
+                authServiceClient.registerStudent(req.email(), req.password());
+
+        System.out.println("[REGISTER] Auth-service returned id = " + auth.id());
 
         // 3) create profile
+        System.out.println("[REGISTER] Step 3 - creating user profile");
+
         UserProfile profile = new UserProfile();
         profile.setId(auth.id());
         profile.setName(req.name());
 
         if (req.requestTeacher()) {
+            System.out.println("[REGISTER] Teacher requested → setting PENDING");
             profile.setTeacherRequestStatus(TeacherRequestStatus.PENDING);
             profile.setTeacherRequestedAt(Instant.now());
         } else {
+            System.out.println("[REGISTER] No teacher request");
             profile.setTeacherRequestStatus(TeacherRequestStatus.NONE);
         }
 
         try {
+            System.out.println("[REGISTER] Step 4 - saving profile");
             userProfileRepository.save(profile);
+            System.out.println("[REGISTER] Profile saved successfully");
         } catch (Exception e) {
-            // 4) compensation (optional but good)
+            System.out.println("[REGISTER] ERROR saving profile → compensating");
+            System.out.println("[REGISTER] Deleting auth user id = " + auth.id());
+
             authServiceClient.deleteUser(auth.id());
             throw e;
         }
 
-        // 5) return combined response
+        System.out.println("[REGISTER] Step 5 - returning response");
+        System.out.println("=== [REGISTER] END ===");
+
         return new RegisterResponse(auth.token(), profileToDto(profile));
     }
 
+    @Transactional
+    public void registerWithRole(RegisterRequest req, String role) {
+
+        System.out.println("=== [REGISTER_WITH_ROLE] START ===");
+        System.out.println("[REGISTER_WITH_ROLE] email = " + req.email());
+        System.out.println("[REGISTER_WITH_ROLE] role = " + role);
+        System.out.println("[REGISTER_WITH_ROLE] requestTeacher = " + req.requestTeacher());
+
+        System.out.println("[REGISTER_WITH_ROLE] Step 1 - validation passed");
+
+        // 2) call auth-service register with provided role
+        System.out.println("[REGISTER_WITH_ROLE] Step 2 - calling auth-service");
+        AuthRegisterResponse auth =
+                authServiceClient.registerWithRole(req.email(), req.password(), role);
+
+        System.out.println("[REGISTER_WITH_ROLE] Auth-service returned id = " + auth.id());
+
+        // 3) create profile
+        System.out.println("[REGISTER_WITH_ROLE] Step 3 - creating user profile");
+
+        UserProfile profile = new UserProfile();
+        profile.setId(auth.id());
+        profile.setName(req.name());
+
+        if (req.requestTeacher()) {
+            System.out.println("[REGISTER_WITH_ROLE] Teacher requested → setting PENDING");
+            profile.setTeacherRequestStatus(TeacherRequestStatus.PENDING);
+            profile.setTeacherRequestedAt(Instant.now());
+        } else {
+            System.out.println("[REGISTER_WITH_ROLE] No teacher request");
+            profile.setTeacherRequestStatus(TeacherRequestStatus.NONE);
+        }
+
+        try {
+            System.out.println("[REGISTER_WITH_ROLE] Step 4 - saving profile");
+            userProfileRepository.save(profile);
+            System.out.println("[REGISTER_WITH_ROLE] Profile saved successfully");
+        } catch (Exception e) {
+            System.out.println("[REGISTER_WITH_ROLE] ERROR saving profile → compensating");
+            System.out.println("[REGISTER_WITH_ROLE] Deleting auth user id = " + auth.id());
+
+            authServiceClient.deleteUser(auth.id());
+            throw e;
+        }
+
+        System.out.println("[REGISTER_WITH_ROLE] Step 5 - returning response");
+        System.out.println("=== [REGISTER_WITH_ROLE] END ===");
+    }
 
     // -------------------------
     // Teacher request workflow
@@ -80,7 +148,6 @@ public class UserService {
         profile.setTeacherRequestedAt(Instant.now());
         profile.setTeacherRequestNote(note);
 
-        // @Transactional -> auto flush
     }
 
     // -------------------------
@@ -202,16 +269,22 @@ public class UserService {
     private UserProfile getOrCreateCurrentProfile() {
         Long userId = getCurrentUserId();
 
-        Optional<UserProfile> existing = userProfileRepository.findById(userId);
-        if (existing.isPresent()) {
-            return existing.get();
-        }
+        return userProfileRepository.findById(userId)
+                .orElseGet(() -> {
+                    UserProfile created = new UserProfile();
+                    created.setId(userId);
 
-        // creezi automat profilul la primul request
-        UserProfile created = new UserProfile();
-        created.setId(userId);
-        created.setTeacherRequestStatus(TeacherRequestStatus.NONE); // sau null, după model
-        return userProfileRepository.save(created);
+                    created.setName("User " + userId);
+
+                    created.setTeacherRequestStatus(TeacherRequestStatus.NONE);
+
+                    try {
+                        return userProfileRepository.save(created); // INSERT (because isNew=true)
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        // if two requests race and both try to create, one insert will fail
+                        return userProfileRepository.findById(userId).orElseThrow();
+                    }
+                });
     }
 
     public Long getCurrentUserId() {

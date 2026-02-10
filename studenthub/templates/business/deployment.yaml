@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-business
+  labels:
+    app: {{ .Release.Name }}-business
+spec:
+  replicas: {{ .Values.business.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-business
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-business
+    spec:
+      initContainers:
+      - name: wait-for-auth
+        image: busybox:1.36
+        command:
+          - sh
+          - -c
+          - |
+            echo "Waiting for auth-service port..."
+            until nc -z studenthub-auth 80; do
+              echo "Auth port not ready, sleeping..."
+              sleep 2
+            done
+            echo "Auth port is open"
+      containers:
+        - name: business-service
+          image: "{{ .Values.business.image.repository }}:{{ .Values.business.image.tag }}"
+          imagePullPolicy: {{ .Values.business.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.business.resources | nindent 12 }}
+          ports:
+            - containerPort: {{ .Values.business.containerPort }}
+          env:
+            - name: AUTH_SERVICE_URL
+              value: "http://studenthub-auth"
+
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres:5432/business_db"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "master"
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: "masterpass"
+
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: update
+            - name: SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT
+              value: org.hibernate.dialect.PostgreSQLDialect
+
+            - name: INTERNAL_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: internal-secret
+                  key: secret

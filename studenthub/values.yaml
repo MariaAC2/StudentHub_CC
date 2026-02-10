@@ -1,0 +1,60 @@
+auth:
+  replicas: 1
+  containerPort: 8080
+  image:
+    repository: mariaac53695/studenthub-auth
+    tag: "2.3"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+business:
+  replicas: 1
+  containerPort: 8080
+  image:
+    repository: mariaac53695/studenthub-business
+    tag: "2.1"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+postgres:
+  image:
+    repository: postgres
+    tag: "16"
+    pullPolicy: IfNotPresent
+
+  storage:
+    size: 10Gi
+
+  credentials:
+    username: master
+    password: masterpass
+
+  databases:
+    auth: auth_db
+    business: business_db
+
+adminer:
+  enabled: true
+  image:
+    repository: adminer
+    tag: latest
+  service:
+    port: 80
+
+jwt:
+  secret: "3EOXRTOvFaixVY2Vs6dHLW1wGhE5Bm1hGlOay1yhxUcCdegl8zCRXm9zwSZx1I80"
+
+internal:
+  secret: "studenthub-internal-123"

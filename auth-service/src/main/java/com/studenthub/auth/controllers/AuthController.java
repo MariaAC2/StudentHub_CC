@@ -21,24 +21,23 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    @ResponseStatus(HttpStatus.CREATED)
-    public void register(@RequestBody RegisterRequest request) {
-        authService.register(request);
+    public TokenResponse register(@RequestBody RegisterRequest request) {
+        return authService.register(request);
     }
 
     @PostMapping("/login")
-    public TokenResponse login(@RequestBody LoginRequest request) {
+    public String login(@RequestBody LoginRequest request) {
         return authService.login(request);
     }
 
     @GetMapping("/validate")
     public ValidateTokenResponse validate(Authentication authentication) {
-
         Jwt jwt = (Jwt) authentication.getPrincipal();
 
-        assert jwt != null;
         Long userId = Long.valueOf(jwt.getSubject());
-        String role = jwt.getClaim("roles");
+
+        var roles = jwt.getClaimAsStringList("roles"); // ✅ list
+        String role = (roles != null && !roles.isEmpty()) ? roles.get(0) : null;
 
         return new ValidateTokenResponse(userId, role);
     }

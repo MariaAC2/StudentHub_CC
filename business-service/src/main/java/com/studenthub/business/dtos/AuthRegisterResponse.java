@@ -4,4 +4,3 @@ public record AuthRegisterResponse(
         Long id,
         String token
 ) {}
-

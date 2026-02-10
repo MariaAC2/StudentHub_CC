@@ -1,3 +1,7 @@
 package com.studenthub.auth.dtos;
 
-public record RegisterRequest(String name, String email, String password, boolean requestTeacher) {}
+public record RegisterRequest(
+        String email,
+        String password,
+        String role
+) {}
